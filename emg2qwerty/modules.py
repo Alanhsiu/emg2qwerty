@@ -6,9 +6,9 @@
 
 from collections.abc import Sequence
 
+import math
 import torch
 from torch import nn
-
 
 class SpectrogramNorm(nn.Module):
     """A `torch.nn.Module` that applies 2D batch normalization over spectrogram
@@ -278,3 +278,133 @@ class TDSConvEncoder(nn.Module):
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         return self.tds_conv_blocks(inputs)  # (T, N, num_features)
+
+class EMG_LSTM_Encoder(nn.Module):
+    def __init__(self, in_features: int, hidden_size: int = 128, num_layers: int = 2, bidirectional: bool = True):
+        super().__init__()
+        self.lstm = nn.LSTM(
+            input_size=in_features,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            bidirectional=bidirectional,
+            batch_first=False
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() > 3:
+            x = x.view(x.shape[0], x.shape[1], -1) ## view: 
+            
+        out, _ = self.lstm(x)
+        return out
+    
+class EMG_RNN_Encoder(nn.Module):
+    def __init__(self, in_features: int, hidden_size: int = 256, num_layers: int = 2, bidirectional: bool = True):
+        super().__init__()
+        self.rnn = nn.RNN(
+            input_size=in_features,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            bidirectional=bidirectional,
+            batch_first=False
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() > 3:
+            x = x.view(x.shape[0], x.shape[1], -1)
+            
+        out, _ = self.rnn(x)
+        return out
+    
+class EMG_GRU_Encoder(nn.Module):
+    def __init__(self, in_features: int, hidden_size: int = 256, num_layers: int = 2, bidirectional: bool = True):
+        super().__init__()
+        self.gru = nn.GRU(
+            input_size=in_features,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            bidirectional=bidirectional,
+            batch_first=False
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() > 3:
+            x = x.view(x.shape[0], x.shape[1], -1)
+            
+        out, _ = self.gru(x)
+        return out
+    
+class EMG_CRNN_Encoder(nn.Module):
+    def __init__(self, in_features: int, conv_channels: int = 256, hidden_size: int = 256, num_layers: int = 2, bidirectional: bool = True):
+        super().__init__()
+        
+        self.conv = nn.Sequential(
+            nn.Conv1d(in_channels=in_features, out_channels=conv_channels, kernel_size=5, padding=2, stride=1),
+            nn.BatchNorm1d(conv_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv1d(in_channels=conv_channels, out_channels=conv_channels, kernel_size=5, padding=2, stride=1),
+            nn.BatchNorm1d(conv_channels),
+            nn.ReLU(inplace=True)
+        )
+        
+        self.lstm = nn.LSTM(
+            input_size=conv_channels,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            bidirectional=bidirectional,
+            batch_first=False
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        T, N = x.shape[0], x.shape[1]
+        
+        if x.dim() > 3:
+            x = x.view(T, N, -1)
+            
+        x = x.permute(1, 2, 0)
+        
+        x = self.conv(x)
+        
+        x = x.permute(2, 0, 1)
+        
+        out, _ = self.lstm(x)
+        return out
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 300000):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(max_len, 1, d_model)
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x + self.pe[:x.size(0)]
+        return self.dropout(x)
+
+class EMG_Transformer_Encoder(nn.Module):
+    def __init__(self, in_features: int, d_model: int = 256, nhead: int = 8, num_layers: int = 4, dim_feedforward: int = 1024, dropout: float = 0.1):
+        super().__init__()
+        self.input_proj = nn.Linear(in_features, d_model)
+        self.pos_encoder = PositionalEncoding(d_model, dropout)
+        
+        encoder_layers = nn.TransformerEncoderLayer(
+            d_model=d_model, 
+            nhead=nhead, 
+            dim_feedforward=dim_feedforward, 
+            dropout=dropout,
+            batch_first=False
+        )
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() > 3:
+            x = x.view(x.shape[0], x.shape[1], -1)
+            
+        x = self.input_proj(x)
+        x = self.pos_encoder(x)
+        out = self.transformer_encoder(x)
+        return out

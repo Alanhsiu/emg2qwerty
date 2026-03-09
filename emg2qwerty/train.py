@@ -19,6 +19,9 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from emg2qwerty import transforms, utils
 from emg2qwerty.transforms import Transform
 
+import json
+import time
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 
@@ -96,32 +99,59 @@ def main(config: DictConfig):
         callbacks=callbacks,
     )
 
+    start_time = time.time()
+
     if config.train:
-        # Check if a past checkpoint exists to resume training from
         checkpoint_dir = Path.cwd().joinpath("checkpoints")
         resume_from_checkpoint = utils.get_last_checkpoint(checkpoint_dir)
         if resume_from_checkpoint is not None:
             log.info(f"Resuming training from checkpoint {resume_from_checkpoint}")
 
-        # Train
         trainer.fit(module, datamodule, ckpt_path=resume_from_checkpoint)
 
-        # Load best checkpoint
         module = module.load_from_checkpoint(
             trainer.checkpoint_callback.best_model_path
         )
 
-    # Validate and test on the best checkpoint (if training), or on the
-    # loaded `config.checkpoint` (otherwise)
     val_metrics = trainer.validate(module, datamodule)
     test_metrics = trainer.test(module, datamodule)
+    
+    end_time = time.time()
+    training_time_seconds = end_time - start_time
+
+    total_params = sum(p.numel() for p in module.parameters())
+    trainable_params = sum(p.numel() for p in module.parameters() if p.requires_grad)
+    model_class_name = config.module._target_.split('.')[-1]
 
     results = {
+        "model_architecture": model_class_name,
+        "hardware": "3 x RTX A6000",
+        "training_time_seconds": round(training_time_seconds, 2),
+        "training_time_formatted": time.strftime("%H:%M:%S", time.gmtime(training_time_seconds)),
+        "parameters": {
+            "total": total_params,
+            "trainable": trainable_params
+        },
         "val_metrics": val_metrics,
         "test_metrics": test_metrics,
         "best_checkpoint": trainer.checkpoint_callback.best_model_path,
+        "experiment_config": OmegaConf.to_container(config, resolve=True)
     }
+    
     pprint.pprint(results, sort_dicts=False)
+
+    project_root = get_original_cwd()
+    results_dir = os.path.join(project_root, "results")
+    os.makedirs(results_dir, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{model_class_name}_{timestamp}.json"
+    output_file = os.path.join(results_dir, filename)
+    
+    with open(output_file, "w") as f:
+        json.dump(results, f, indent=4)
+        
+    log.info(f"Experiment results successfully saved to: {output_file}")
 
 
 if __name__ == "__main__":

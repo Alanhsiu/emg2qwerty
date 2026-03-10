@@ -264,3 +264,23 @@ class AmplitudeScaling:
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         scale = random.uniform(self.min_scale, self.max_scale)
         return x * scale
+    
+@dataclass
+class MaskChannels:
+    mask_left: bool = False
+    mask_right: bool = False
+    keep_channels: Sequence[int] = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        out = tensor.clone()
+        
+        if self.mask_left:
+            out[:, 0, :] = 0.0
+        if self.mask_right:
+            out[:, 1, :] = 0.0
+
+        drop_channels = [c for c in range(16) if c not in self.keep_channels]
+        if drop_channels:
+            out[:, :, drop_channels] = 0.0
+
+        return out

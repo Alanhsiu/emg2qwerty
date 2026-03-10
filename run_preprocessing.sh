@@ -35,11 +35,11 @@ run_preproc() {
 
 # 1. High Frequency Resolution (n_fft=128)
 # Calculation: (128 // 2 + 1) * 32 channels = 65 * 32 = 2080 features
-run_preproc "HighFreq_nfft128" "logspec.n_fft=128 module.in_features=2080"
+# run_preproc "HighFreq_nfft128" "logspec.n_fft=128 module.in_features=2080"
 
 # 2. Low Time Resolution / Fast Compression (hop_length=32)
 # Calculation: in_features remains (64 // 2 + 1) * 32 = 1056
-run_preproc "LowTime_hop32" "logspec.hop_length=32 module.in_features=1056"
+# run_preproc "LowTime_hop32" "logspec.hop_length=32 module.in_features=1056"
 
 # 3. High Time Resolution / Fine-grained (hop_length=8)
 # Calculation: in_features remains 1056

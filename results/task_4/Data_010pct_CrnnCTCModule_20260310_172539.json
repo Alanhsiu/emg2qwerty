@@ -1,0 +1,254 @@
+{
+    "model_architecture": "CrnnCTCModule",
+    "hardware": "3 x RTX A6000",
+    "training_time_seconds": 446.54,
+    "training_time_formatted": "00:07:26",
+    "parameters": {
+        "total": 4361379,
+        "trainable": 4361379
+    },
+    "val_metrics": [
+        {
+            "val/loss": 145.60995483398438,
+            "val/CER": 90.16393280029297,
+            "val/IER": 43.93000030517578,
+            "val/DER": 3.145768642425537,
+            "val/SER": 43.088172912597656
+        }
+    ],
+    "test_metrics": [
+        {
+            "test/loss": 124.1737289428711,
+            "test/CER": 84.63368225097656,
+            "test/IER": 53.53361129760742,
+            "test/DER": 0.0,
+            "test/SER": 31.100065231323242
+        }
+    ],
+    "best_checkpoint": "/home/b09901066/emg2qwerty/logs/2026-03-10/17-18-12/checkpoints/epoch=1-step=12.ckpt",
+    "experiment_config": {
+        "user": "single_user",
+        "dataset": {
+            "train": [
+                {
+                    "user": 89335547,
+                    "session": "2021-06-03-1622765527-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f"
+                },
+                {
+                    "user": 89335547,
+                    "session": "2021-06-02-1622681518-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f"
+                }
+            ],
+            "val": [
+                {
+                    "user": 89335547,
+                    "session": "2021-06-04-1622862148-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f"
+                }
+            ],
+            "test": [
+                {
+                    "user": 89335547,
+                    "session": "2021-06-02-1622682789-keystrokes-dca-study@1-0efbe614-9ae6-4131-9192-4398359b4f5f"
+                }
+            ],
+            "root": "/home/b09901066/emg2qwerty/data"
+        },
+        "to_tensor": {
+            "_target_": "emg2qwerty.transforms.ToTensor",
+            "fields": [
+                "emg_left",
+                "emg_right"
+            ]
+        },
+        "band_rotation": {
+            "_target_": "emg2qwerty.transforms.ForEach",
+            "transform": {
+                "_target_": "emg2qwerty.transforms.RandomBandRotation",
+                "offsets": [
+                    -1,
+                    0,
+                    1
+                ]
+            }
+        },
+        "temporal_jitter": {
+            "_target_": "emg2qwerty.transforms.TemporalAlignmentJitter",
+            "max_offset": 120
+        },
+        "logspec": {
+            "_target_": "emg2qwerty.transforms.LogSpectrogram",
+            "n_fft": 64,
+            "hop_length": 16
+        },
+        "specaug": {
+            "_target_": "emg2qwerty.transforms.SpecAugment",
+            "n_time_masks": 3,
+            "time_mask_param": 25,
+            "n_freq_masks": 2,
+            "freq_mask_param": 4
+        },
+        "add_noise": {
+            "_target_": "emg2qwerty.transforms.AddGaussianNoise",
+            "mean": 0.0,
+            "std": 0.05
+        },
+        "amplitude_scale": {
+            "_target_": "emg2qwerty.transforms.AmplitudeScaling",
+            "min_scale": 0.8,
+            "max_scale": 1.2
+        },
+        "mask_channels": {
+            "_target_": "emg2qwerty.transforms.MaskChannels",
+            "mask_left": false,
+            "mask_right": false,
+            "keep_channels": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15
+            ]
+        },
+        "downsample_emg": {
+            "_target_": "emg2qwerty.transforms.SimulateLowSamplingRate",
+            "factor": 1
+        },
+        "transforms": {
+            "train": [
+                {
+                    "_target_": "emg2qwerty.transforms.ToTensor",
+                    "fields": [
+                        "emg_left",
+                        "emg_right"
+                    ]
+                },
+                {
+                    "_target_": "emg2qwerty.transforms.ForEach",
+                    "transform": {
+                        "_target_": "emg2qwerty.transforms.RandomBandRotation",
+                        "offsets": [
+                            -1,
+                            0,
+                            1
+                        ]
+                    }
+                },
+                {
+                    "_target_": "emg2qwerty.transforms.TemporalAlignmentJitter",
+                    "max_offset": 120
+                },
+                {
+                    "_target_": "emg2qwerty.transforms.LogSpectrogram",
+                    "n_fft": 64,
+                    "hop_length": 16
+                },
+                {
+                    "_target_": "emg2qwerty.transforms.SpecAugment",
+                    "n_time_masks": 3,
+                    "time_mask_param": 25,
+                    "n_freq_masks": 2,
+                    "freq_mask_param": 4
+                }
+            ],
+            "val": [
+                {
+                    "_target_": "emg2qwerty.transforms.ToTensor",
+                    "fields": [
+                        "emg_left",
+                        "emg_right"
+                    ]
+                },
+                {
+                    "_target_": "emg2qwerty.transforms.LogSpectrogram",
+                    "n_fft": 64,
+                    "hop_length": 16
+                }
+            ],
+            "test": [
+                {
+                    "_target_": "emg2qwerty.transforms.ToTensor",
+                    "fields": [
+                        "emg_left",
+                        "emg_right"
+                    ]
+                },
+                {
+                    "_target_": "emg2qwerty.transforms.LogSpectrogram",
+                    "n_fft": 64,
+                    "hop_length": 16
+                }
+            ]
+        },
+        "module": {
+            "_target_": "emg2qwerty.lightning.CrnnCTCModule",
+            "in_features": 1056,
+            "conv_channels": 256,
+            "hidden_size": 256,
+            "num_layers": 2
+        },
+        "datamodule": {
+            "_target_": "emg2qwerty.lightning.WindowedEMGDataModule",
+            "window_length": 8000,
+            "padding": [
+                1800,
+                200
+            ]
+        },
+        "optimizer": {
+            "_target_": "torch.optim.Adam",
+            "lr": 0.001
+        },
+        "lr_scheduler": {
+            "scheduler": {
+                "_target_": "pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR",
+                "warmup_epochs": 10,
+                "max_epochs": 150,
+                "warmup_start_lr": 1e-08,
+                "eta_min": 1e-06
+            },
+            "interval": "epoch"
+        },
+        "decoder": {
+            "_target_": "emg2qwerty.decoder.CTCGreedyDecoder"
+        },
+        "seed": 1501,
+        "batch_size": 32,
+        "num_workers": 4,
+        "train": true,
+        "checkpoint": null,
+        "monitor_metric": "val/CER",
+        "monitor_mode": "min",
+        "trainer": {
+            "accelerator": "gpu",
+            "devices": 3,
+            "num_nodes": 1,
+            "max_epochs": 150,
+            "default_root_dir": "/home/b09901066/emg2qwerty/logs/2026-03-10/17-18-12"
+        },
+        "callbacks": [
+            {
+                "_target_": "pytorch_lightning.callbacks.LearningRateMonitor"
+            },
+            {
+                "_target_": "pytorch_lightning.callbacks.ModelCheckpoint",
+                "dirpath": "/home/b09901066/emg2qwerty/logs/2026-03-10/17-18-12/checkpoints",
+                "monitor": "val/CER",
+                "mode": "min",
+                "save_last": true,
+                "verbose": true
+            }
+        ],
+        "data_fraction": 0.1
+    }
+}

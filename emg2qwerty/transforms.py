@@ -284,3 +284,15 @@ class MaskChannels:
             out[:, :, drop_channels] = 0.0
 
         return out
+    
+@dataclass
+class SimulateLowSamplingRate:
+    factor: int = 1
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        if self.factor <= 1:
+            return tensor
+            
+        T = tensor.shape[0]
+        indices = (torch.arange(T) // self.factor) * self.factor
+        return tensor[indices, ...]

@@ -25,6 +25,16 @@ specaug:
   n_freq_masks: 2
   freq_mask_param: 4
 
+add_noise:
+  _target_: emg2qwerty.transforms.AddGaussianNoise
+  mean: 0.0
+  std: 0.05
+
+amplitude_scale:
+  _target_: emg2qwerty.transforms.AmplitudeScaling
+  min_scale: 0.8
+  max_scale: 1.2
+
 transforms:
   train:
     - ${to_tensor}

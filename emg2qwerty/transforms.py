@@ -12,6 +12,8 @@ import numpy as np
 import torch
 import torchaudio
 
+import random
+
 
 TTransformIn = TypeVar("TTransformIn")
 TTransformOut = TypeVar("TTransformOut")
@@ -243,3 +245,22 @@ class SpecAugment:
 
         # (..., C, freq, T) -> (T, ..., C, freq)
         return x.movedim(-1, 0)
+
+
+@dataclass
+class AddGaussianNoise:
+    mean: float = 0.0
+    std: float = 0.05
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        noise = torch.randn_like(x) * self.std + self.mean
+        return x + noise
+
+@dataclass
+class AmplitudeScaling:
+    min_scale: float = 0.8
+    max_scale: float = 1.2
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        scale = random.uniform(self.min_scale, self.max_scale)
+        return x * scale

@@ -22,6 +22,7 @@ from emg2qwerty.transforms import Transform
 import json
 import time
 from datetime import datetime
+import math
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +74,16 @@ def main(config: DictConfig):
             lr_scheduler=config.lr_scheduler,
             decoder=config.decoder,
         )
+        
+    if "data_fraction" in config:
+        fraction = float(config.data_fraction)
+        if fraction < 1.0:
+            train_sessions = config.dataset.train
+            keep_count = max(1, math.ceil(len(train_sessions) * fraction))
+            config.dataset.train = train_sessions[:keep_count]
+            
+            log = logging.getLogger(__name__)
+            log.info(f"[*] Q4 Ablation: Using {keep_count}/{len(train_sessions)} sessions ({fraction*100}%)")
 
     # Instantiate LightningDataModule
     log.info(f"Instantiating LightningDataModule {config.datamodule}")

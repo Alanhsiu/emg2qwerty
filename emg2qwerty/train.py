@@ -82,7 +82,6 @@ def main(config: DictConfig):
             keep_count = max(1, math.ceil(len(train_sessions) * fraction))
             config.dataset.train = train_sessions[:keep_count]
             
-            log = logging.getLogger(__name__)
             log.info(f"[*] Q4 Ablation: Using {keep_count}/{len(train_sessions)} sessions ({fraction*100}%)")
 
     # Instantiate LightningDataModule
